@@ -6,7 +6,7 @@ services:
     region: oregon
     plan: free
     buildCommand: >-
-      cd frontend && npm install --legacy-peer-deps && npm run build &&
+      cd frontend && npm install --include=dev --legacy-peer-deps && npm run build &&
       mkdir -p ../server/public &&
       cp -r dist/. ../server/public/ &&
       cd ../server && npm install --legacy-peer-deps
