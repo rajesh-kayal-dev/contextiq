@@ -3,6 +3,11 @@ process.env.NODE_ENV === "development"
   ? require("dotenv").config({ path: `.env.${process.env.NODE_ENV}` })
   : require("dotenv").config();
 
+if (!process.env.STORAGE_DIR) {
+  const path = require("path");
+  process.env.STORAGE_DIR = path.resolve(__dirname, "storage");
+}
+
 require("./utils/logger")();
 console.info("[ContextIQ] Starting server...");
 require("./utils/boot/patchSdkTimeouts")();
