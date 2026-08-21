@@ -1,0 +1,42 @@
+services:
+  # ─── Full-Stack Web Service (Server + Frontend) ───────────────────────────
+  - type: web
+    name: contextiq
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: >-
+      cd frontend && npm install --legacy-peer-deps && npm run build &&
+      mkdir -p ../server/public &&
+      cp -r dist/. ../server/public/ &&
+      cd ../server && npm install --legacy-peer-deps
+    startCommand: node server/index.js
+    rootDir: .
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SERVER_PORT
+        value: 10000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SIG_KEY
+        generateValue: true
+      - key: SIG_SALT
+        generateValue: true
+      - key: STORAGE_DIR
+        value: /opt/render/project/src/server/storage
+
+  # ─── Collector Background Worker ──────────────────────────────────────────
+  - type: worker
+    name: contextiq-collector
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: cd collector && npm install --legacy-peer-deps
+    startCommand: node collector/index.js
+    rootDir: .
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: STORAGE_DIR
+        value: /opt/render/project/src/server/storage
