@@ -1,0 +1,11 @@
+hotdir/*
+!hotdir/__HOTDIR__.md
+yarn-error.log
+!yarn.lock
+outputs
+scripts
+.env
+!.env.example
+.env.development
+.env.production
+.env.test

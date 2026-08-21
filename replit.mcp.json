@@ -1,0 +1,5 @@
+{
+  "serverName": "replit-mcp",
+  "endpoint": "https://repl.co",
+  "authHeader": "Bearer my_secure_mcp_token_123"
+}

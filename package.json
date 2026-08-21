@@ -1,0 +1,39 @@
+{
+  "name": "contextiq",
+  "version": "1.0.0",
+  "description": "AI-powered knowledge and retrieval platform for searching documents and having contextual conversations with AI.",
+  "main": "index.js",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "jest",
+    "lint": "cd server && npm run lint && cd ../frontend && npm run lint && cd ../collector && npm run lint",
+    "lint:ci": "cd server && npm run lint:check && cd ../frontend && npm run lint:check && cd ../collector && npm run lint:check",
+    "setup": "cd server && npm install && cd ../collector && npm install && cd ../frontend && npm install && cd .. && npm run setup:envs && npm run prisma:setup && echo \"Please run npm run dev:server, npm run dev:collector, and npm run dev:frontend in separate terminal tabs.\"",
+    "setup:envs": "cp -n ./frontend/.env.example ./frontend/.env; cp -n ./server/.env.example ./server/.env.development; cp -n ./collector/.env.example ./collector/.env; cp -n ./docker/.env.example ./docker/.env; echo \"All ENV files copied!\n\"",
+    "dev:server": "cd server && npm run dev",
+    "dev:collector": "cd collector && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev": "npx concurrently \"npm run dev:server\" \"npm run dev:frontend\" \"npm run dev:collector\"",
+    "prisma:generate": "cd server && npx prisma generate",
+    "prisma:migrate": "cd server && npx prisma migrate dev --name init",
+    "prisma:seed": "cd server && npx prisma db seed",
+    "prisma:setup": "npm run prisma:generate && npm run prisma:migrate && npm run prisma:seed",
+    "prisma:reset": "truncate -s 0 server/storage/contextiq.db && npm run prisma:migrate",
+    "prod:server": "cd server && npm start",
+    "prod:frontend": "cd frontend && npm run build",
+    "translations:verify": "cd frontend/src/locales && node verifyTranslations.mjs",
+    "translations:normalize": "cd frontend/src/locales && node normalizeEn.mjs && cd ../../.. && cd frontend && npm run lint && cd .. && npm run translations:verify",
+    "translations:prune": "cd frontend/src/locales && node findUnusedTranslations.mjs --delete && cd ../../../ && npm run translations:normalize",
+    "start:replit": "node combined.js",
+    "deploy": "node ./scripts/deploy.js"
+  },
+  "private": false,
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "jest": "^29.7.0"
+  }
+}
