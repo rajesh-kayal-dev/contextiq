@@ -11,29 +11,38 @@ const Module = require("module");
 const COLLECTOR_DIR = path.resolve(__dirname, "../../../collector");
 const COLLECTOR_NODE_MODULES = path.join(COLLECTOR_DIR, "node_modules");
 
-// Add collector's node_modules to Node module resolution so collector
+// Add both collector's node_modules and server's node_modules to Node module resolution so collector
 // dependencies (mime, pdf-parse, etc.) are found when executing in-process.
 // We patch both NODE_PATH and call _initPaths for broad Node.js version compatibility.
 function ensureCollectorModulesResolvable() {
-  if (!fs.existsSync(COLLECTOR_NODE_MODULES)) return;
+  const SERVER_NODE_MODULES = path.resolve(__dirname, "../../node_modules");
+  const pathsToAdd = [COLLECTOR_NODE_MODULES, SERVER_NODE_MODULES];
+
   const currentNodePath = process.env.NODE_PATH || "";
-  if (currentNodePath.includes(COLLECTOR_NODE_MODULES)) return; // already added
+  let newPath = currentNodePath;
 
-  process.env.NODE_PATH = currentNodePath
-    ? `${COLLECTOR_NODE_MODULES}:${currentNodePath}`
-    : COLLECTOR_NODE_MODULES;
+  for (const dir of pathsToAdd) {
+    if (fs.existsSync(dir) && !newPath.includes(dir)) {
+      newPath = newPath ? `${dir}:${newPath}` : dir;
+    }
+  }
 
-  // Reinitialize the module paths so Node.js picks up the new NODE_PATH entry
-  try {
-    Module._initPaths();
-    console.info("[InProcessCollector] Collector node_modules registered in NODE_PATH.");
-  } catch (e) {
-    console.warn("[InProcessCollector] Could not call Module._initPaths:", e.message);
+  if (newPath !== currentNodePath) {
+    process.env.NODE_PATH = newPath;
+    // Reinitialize the module paths so Node.js picks up the new NODE_PATH entry
+    try {
+      Module._initPaths();
+      console.info("[InProcessCollector] Node resolution paths updated with:", newPath);
+    } catch (e) {
+      console.warn("[InProcessCollector] Could not call Module._initPaths:", e.message);
+    }
   }
 
   // Also push directly into globalPaths as a secondary fallback
-  if (!Module.globalPaths.includes(COLLECTOR_NODE_MODULES)) {
-    Module.globalPaths.unshift(COLLECTOR_NODE_MODULES);
+  for (const dir of pathsToAdd) {
+    if (fs.existsSync(dir) && !Module.globalPaths.includes(dir)) {
+      Module.globalPaths.unshift(dir);
+    }
   }
 }
 
