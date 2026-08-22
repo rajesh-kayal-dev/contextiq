@@ -5,7 +5,7 @@ services:
     env: node
     region: oregon
     plan: free
-    buildCommand: cd collector && npm install --legacy-peer-deps && cd ../server && npm install --legacy-peer-deps && npx prisma generate && npx prisma migrate deploy
+    buildCommand: cd collector && PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true npm install --legacy-peer-deps && cd ../server && npm install --legacy-peer-deps && npx prisma generate && npx prisma migrate deploy
     startCommand: node server/index.js
     rootDir: .
     envVars:
