@@ -82,7 +82,7 @@ class OCRLoader {
 
     const documentTitle = path.basename(filePath);
     this.log(`Starting OCR of ${documentTitle}`);
-    const pdfjs = await import("pdf-parse/lib/pdf.js/v2.0.550/build/pdf.js");
+    const pdfjs = require("pdf-parse/lib/pdf.js/v2.0.550/build/pdf.js");
     let buffer = fs.readFileSync(filePath);
 
     const pdfDocument = await pdfjs.getDocument({ data: buffer });

@@ -83,7 +83,7 @@ class PDFLoader {
 
   async getPdfJS() {
     try {
-      const pdfjs = await import("pdf-parse/lib/pdf.js/v1.10.100/build/pdf.js");
+      const pdfjs = require("pdf-parse/lib/pdf.js/v1.10.100/build/pdf.js");
       return { getDocument: pdfjs.getDocument, version: pdfjs.version };
     } catch (e) {
       console.error(e);
