@@ -128,11 +128,24 @@ function workspaceParsedFilesEndpoints(app) {
     ],
     async function (request, response) {
       try {
+        // Step 1: Check file was uploaded by multer
+        if (!request.file) {
+          console.error("[parse] No file in request - multer may have failed to save the upload");
+          return response.status(500).json({
+            success: false,
+            error: "File upload failed - no file received by server. Check server logs.",
+          });
+        }
+
         const user = await userFromSession(request, response);
         const workspace = response.locals.workspace;
         const Collector = new CollectorApi();
-        const { originalname } = request.file;
+        const { originalname, path: uploadedPath } = request.file;
+        console.info(`[parse] File received: ${originalname} at ${uploadedPath}`);
+
+        // Step 2: Check collector
         const processingOnline = await Collector.online();
+        console.info(`[parse] Collector online: ${processingOnline}`);
 
         if (!processingOnline) {
           return response.status(500).json({
@@ -141,8 +154,12 @@ function workspaceParsedFilesEndpoints(app) {
           });
         }
 
+        // Step 3: Parse document
+        console.info(`[parse] Parsing document: ${originalname}`);
         const { success, reason, documents } =
           await Collector.parseDocument(originalname);
+        console.info(`[parse] Parse result: success=${success}, reason=${reason}, docs=${documents?.length}`);
+
         if (!success || !documents?.[0]) {
           return response.status(500).json({
             success: false,
