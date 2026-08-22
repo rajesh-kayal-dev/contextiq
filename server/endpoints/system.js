@@ -786,10 +786,13 @@ function systemEndpoints(app) {
         return;
       } else {
         const { password } = reqBody(request);
+        const authToken = process.env.AUTH_TOKEN || "";
         if (
+          !password ||
+          !authToken ||
           !bcrypt.compareSync(
-            password,
-            bcrypt.hashSync(process.env.AUTH_TOKEN, 10)
+            String(password),
+            bcrypt.hashSync(String(authToken), 10)
           )
         ) {
           await EventLogs.logEvent("failed_login_invalid_password", {
@@ -820,7 +823,7 @@ function systemEndpoints(app) {
       }
     } catch (e) {
       console.error(e.message, e);
-      response.sendStatus(500).end();
+      response.status(500).json({ valid: false, message: e.message || "Internal Server Error" });
     }
   });
 
