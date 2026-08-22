@@ -196,8 +196,8 @@ function workspaceParsedFilesEndpoints(app) {
           files,
         });
       } catch (e) {
-        console.error(e.message, e);
-        return response.sendStatus(500).end();
+        console.error("[parse endpoint error]", e.message, e);
+        return response.status(500).json({ success: false, error: e.message || "Internal server error" });
       }
     }
   );

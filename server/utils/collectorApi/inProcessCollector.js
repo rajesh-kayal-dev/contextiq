@@ -6,8 +6,21 @@
 
 const path = require("path");
 const fs = require("fs");
+const Module = require("module");
 
 const COLLECTOR_DIR = path.resolve(__dirname, "../../../collector");
+const COLLECTOR_NODE_MODULES = path.join(COLLECTOR_DIR, "node_modules");
+
+// Add collector's node_modules to Node's module resolution path so that
+// collector dependencies (mime, pdf-parse, etc.) can be found when running
+// in the server process (in-process mode on Render).
+if (
+  fs.existsSync(COLLECTOR_NODE_MODULES) &&
+  !Module.globalPaths.includes(COLLECTOR_NODE_MODULES)
+) {
+  Module.globalPaths.push(COLLECTOR_NODE_MODULES);
+  console.info("[InProcessCollector] Added collector node_modules to module resolution path.");
+}
 
 /**
  * Check if the collector module is available for in-process execution
