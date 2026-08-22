@@ -6,20 +6,9 @@ const { MimeDetector } = require("./mime");
  * The folder where documents are stored to be stored when
  * processed by the collector.
  */
-const documentsFolder =
-  process.env.NODE_ENV === "development"
-    ? path.resolve(__dirname, `../../../server/storage/documents`)
-    : path.resolve(process.env.STORAGE_DIR, `documents`);
-
-/**
- * The folder where direct uploads are stored to be stored when
- * processed by the collector. These are files that were DnD'd into UI
- * and are not to be embedded or selectable from the file picker.
- */
-const directUploadsFolder =
-  process.env.NODE_ENV === "development"
-    ? path.resolve(__dirname, `../../../server/storage/direct-uploads`)
-    : path.resolve(process.env.STORAGE_DIR, `direct-uploads`);
+const baseStorageDir = process.env.STORAGE_DIR || path.resolve(__dirname, "../../../server/storage");
+const documentsFolder = path.resolve(baseStorageDir, "documents");
+const directUploadsFolder = path.resolve(baseStorageDir, "direct-uploads");
 
 /**
  * Checks if a file is text by checking the mime type and then falling back to buffer inspection.
@@ -174,8 +163,9 @@ async function wipeCollectorStorage() {
 
   const cleanTmpDir = new Promise((resolve) => {
     const directory = path.resolve(__dirname, "../../storage/tmp");
+    if (!fs.existsSync(directory)) return resolve();
     fs.readdir(directory, (err, files) => {
-      if (err) resolve();
+      if (err || !files) return resolve();
 
       for (const file of files) {
         if (file === ".placeholder") continue;
