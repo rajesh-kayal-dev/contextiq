@@ -215,8 +215,12 @@ app.all("*", function (_, response) {
 
 app
   .listen(COLLECTOR_PORT, "0.0.0.0", async () => {
-    await wipeCollectorStorage();
     global.collectorOnline = true;
+    try {
+      await wipeCollectorStorage();
+    } catch (e) {
+      console.warn("[Collector] Storage wipe warning:", e.message);
+    }
     console.log(`Document processor app listening on port ${COLLECTOR_PORT}`);
   })
   .on("error", function (_) {
