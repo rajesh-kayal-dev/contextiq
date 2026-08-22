@@ -133,27 +133,31 @@ class CollectorApi {
       options: this.#attachOptions(),
     });
 
-    return await fetch(`${this.endpoint}/process`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Integrity": this.comkey.sign(data),
-        "X-Payload-Signer": this.comkey.encrypt(
-          new EncryptionManager().xPayload
-        ),
-      },
-      body: data,
-      dispatcher: new Agent({ headersTimeout: 600000 }),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Response could not be completed");
-        return res.json();
-      })
-      .then((res) => res)
-      .catch((e) => {
-        this.log(e.message);
-        return { success: false, reason: e.message, documents: [] };
+    try {
+      const res = await fetch(`${this.endpoint}/process`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Integrity": this.comkey.sign(data),
+          "X-Payload-Signer": this.comkey.encrypt(
+            new EncryptionManager().xPayload
+          ),
+        },
+        body: data,
+        dispatcher: new Agent({ headersTimeout: 600000 }),
       });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      this.log(`HTTP processDocument failed (${e.message}), executing in-process fallback.`);
+    }
+
+    try {
+      const { processSingleFile } = require("../../../collector/processSingleFile");
+      return await processSingleFile(filename, this.#attachOptions(), metadata);
+    } catch (e) {
+      this.log(`In-process processDocument failed: ${e.message}`);
+      return { success: false, reason: e.message, documents: [] };
+    }
   }
 
   /**
@@ -355,26 +359,34 @@ class CollectorApi {
       },
     });
 
-    return await fetch(`${this.endpoint}/parse`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Integrity": this.comkey.sign(data),
-        "X-Payload-Signer": this.comkey.encrypt(
-          new EncryptionManager().xPayload
-        ),
-      },
-      body: data,
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Response could not be completed");
-        return res.json();
-      })
-      .then((res) => res)
-      .catch((e) => {
-        this.log(e.message);
-        return { success: false, reason: e.message, documents: [] };
+    try {
+      const res = await fetch(`${this.endpoint}/parse`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Integrity": this.comkey.sign(data),
+          "X-Payload-Signer": this.comkey.encrypt(
+            new EncryptionManager().xPayload
+          ),
+        },
+        body: data,
       });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      this.log(`HTTP parseDocument failed (${e.message}), executing in-process fallback.`);
+    }
+
+    try {
+      const { processSingleFile } = require("../../../collector/processSingleFile");
+      return await processSingleFile(filename, {
+        ...this.#attachOptions(),
+        parseOnly: true,
+        absolutePath: parseOptions.absolutePath || null,
+      });
+    } catch (e) {
+      this.log(`In-process parseDocument failed: ${e.message}`);
+      return { success: false, reason: e.message, documents: [] };
+    }
   }
 }
 

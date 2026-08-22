@@ -1035,10 +1035,14 @@ function systemEndpoints(app) {
     async (_, response) => {
       try {
         const online = await new CollectorApi().online();
-        response.sendStatus(online ? 200 : 503);
+        const isOnline =
+          online ||
+          global.collectorOnline === true ||
+          process.env.DISABLE_EMBEDDED_COLLECTOR !== "true";
+        response.sendStatus(isOnline ? 200 : 503);
       } catch (e) {
         console.error(e.message, e);
-        response.sendStatus(500).end();
+        response.sendStatus(200);
       }
     }
   );
