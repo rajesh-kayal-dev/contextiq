@@ -11,16 +11,33 @@ const Module = require("module");
 const COLLECTOR_DIR = path.resolve(__dirname, "../../../collector");
 const COLLECTOR_NODE_MODULES = path.join(COLLECTOR_DIR, "node_modules");
 
-// Add collector's node_modules to Node's module resolution path so that
-// collector dependencies (mime, pdf-parse, etc.) can be found when running
-// in the server process (in-process mode on Render).
-if (
-  fs.existsSync(COLLECTOR_NODE_MODULES) &&
-  !Module.globalPaths.includes(COLLECTOR_NODE_MODULES)
-) {
-  Module.globalPaths.push(COLLECTOR_NODE_MODULES);
-  console.info("[InProcessCollector] Added collector node_modules to module resolution path.");
+// Add collector's node_modules to Node module resolution so collector
+// dependencies (mime, pdf-parse, etc.) are found when executing in-process.
+// We patch both NODE_PATH and call _initPaths for broad Node.js version compatibility.
+function ensureCollectorModulesResolvable() {
+  if (!fs.existsSync(COLLECTOR_NODE_MODULES)) return;
+  const currentNodePath = process.env.NODE_PATH || "";
+  if (currentNodePath.includes(COLLECTOR_NODE_MODULES)) return; // already added
+
+  process.env.NODE_PATH = currentNodePath
+    ? `${COLLECTOR_NODE_MODULES}:${currentNodePath}`
+    : COLLECTOR_NODE_MODULES;
+
+  // Reinitialize the module paths so Node.js picks up the new NODE_PATH entry
+  try {
+    Module._initPaths();
+    console.info("[InProcessCollector] Collector node_modules registered in NODE_PATH.");
+  } catch (e) {
+    console.warn("[InProcessCollector] Could not call Module._initPaths:", e.message);
+  }
+
+  // Also push directly into globalPaths as a secondary fallback
+  if (!Module.globalPaths.includes(COLLECTOR_NODE_MODULES)) {
+    Module.globalPaths.unshift(COLLECTOR_NODE_MODULES);
+  }
 }
+
+ensureCollectorModulesResolvable();
 
 /**
  * Check if the collector module is available for in-process execution
