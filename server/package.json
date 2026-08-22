@@ -97,7 +97,17 @@
     "uuid-apikey": "^1.5.3",
     "weaviate-ts-client": "^1.4.0",
     "web-push": "^3.6.7",
-    "winston": "^3.13.0"
+    "winston": "^3.13.0",
+    "mime": "^3.0.0",
+    "pdf-parse": "^1.1.1",
+    "mammoth": "^1.6.0",
+    "node-xlsx": "^0.24.0",
+    "officeparser": "^4.0.5",
+    "turndown": "7.2.4",
+    "node-html-parser": "^6.1.13",
+    "html-to-text": "^9.0.5",
+    "js-tiktoken": "^1.0.8",
+    "mbox-parser": "^1.0.1"
   },
   "overrides": {
     "form-data": "4.0.4",
