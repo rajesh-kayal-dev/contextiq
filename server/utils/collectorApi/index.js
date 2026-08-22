@@ -88,9 +88,18 @@ class CollectorApi {
   }
 
   async online() {
-    return await fetch(this.endpoint)
-      .then((res) => res.ok)
-      .catch(() => false);
+    try {
+      const res = await fetch(this.endpoint);
+      if (res.ok) return true;
+    } catch (e) {}
+
+    try {
+      const altEndpoint = `http://localhost:${CollectorApi.getCollectorPort()}`;
+      const res = await fetch(altEndpoint);
+      if (res.ok) return true;
+    } catch (e) {}
+
+    return false;
   }
 
   async acceptedFileTypes() {
