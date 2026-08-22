@@ -13,24 +13,13 @@ console.info("[ContextIQ] Starting server...");
 
 // Launch embedded document collector service automatically
 try {
-  const { fork } = require("child_process");
   const fs = require("fs");
   const path = require("path");
-  const collectorDir = path.resolve(__dirname, "../collector");
-  const collectorPath = path.resolve(collectorDir, "index.js");
+  const collectorPath = path.resolve(__dirname, "../collector/index.js");
   if (fs.existsSync(collectorPath) && process.env.DISABLE_EMBEDDED_COLLECTOR !== "true") {
-    console.info("[ContextIQ] Launching embedded document collector service...");
-    const collectorProcess = fork(collectorPath, [], {
-      cwd: collectorDir,
-      env: { ...process.env, COLLECTOR_PORT: process.env.COLLECTOR_PORT || "8888" },
-      stdio: "inherit",
-    });
-    collectorProcess.on("exit", (code) => {
-      console.warn(`[ContextIQ] Embedded collector process exited with code ${code}`);
-    });
-    collectorProcess.on("error", (err) => {
-      console.error("[ContextIQ] Collector process error:", err.message);
-    });
+    console.info("[ContextIQ] Initializing embedded document collector service...");
+    process.env.COLLECTOR_PORT = process.env.COLLECTOR_PORT || "8888";
+    require(collectorPath);
   }
 } catch (e) {
   console.error("[ContextIQ] Could not start embedded collector:", e.message);
