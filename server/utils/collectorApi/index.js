@@ -88,6 +88,8 @@ class CollectorApi {
   }
 
   async online() {
+    if (global.collectorOnline === true) return true;
+
     try {
       const res = await fetch(this.endpoint);
       if (res.ok) return true;
