@@ -23,7 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 bundleinspector.html
-.env.production
+!.env.production
 .env
 !.env.example
 flow-typed
