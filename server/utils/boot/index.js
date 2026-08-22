@@ -99,6 +99,28 @@ async function printCleanStartupSummary(isSsl, port) {
   console.info(`[ContextIQ] URL: ${url}`);
 }
 
+function runPrismaMigrations() {
+  const { execSync } = require("child_process");
+  const path = require("path");
+  try {
+    console.info("[ContextIQ] Running database setup & migrations...");
+    execSync("npx prisma migrate deploy", {
+      cwd: path.resolve(__dirname, "../../"),
+      stdio: "inherit",
+    });
+  } catch (e) {
+    console.warn("[ContextIQ] Prisma migrate error, attempting db push:", e.message);
+    try {
+      execSync("npx prisma db push --accept-data-loss", {
+        cwd: path.resolve(__dirname, "../../"),
+        stdio: "inherit",
+      });
+    } catch (pushErr) {
+      console.error("[ContextIQ] Database setup failed:", pushErr.message);
+    }
+  }
+}
+
 function bootSSL(app, port = 3001) {
   try {
     console.debug(
@@ -113,6 +135,7 @@ function bootSSL(app, port = 3001) {
 
     server
       .listen(port, async () => {
+        runPrismaMigrations();
         await markOnboarded();
         await migrateGroqModel();
         await setupTelemetry();
@@ -146,6 +169,7 @@ function bootHTTP(app, port = 3001) {
 
   app
     .listen(port, async () => {
+      runPrismaMigrations();
       await markOnboarded();
       await migrateGroqModel();
       await setupTelemetry();
