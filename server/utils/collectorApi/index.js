@@ -1,5 +1,6 @@
 const { EncryptionManager } = require("../EncryptionManager");
 const { Agent } = require("undici");
+const inProcessCollector = require("./inProcessCollector");
 
 /**
  * @typedef {Object} CollectorOptions
@@ -88,19 +89,17 @@ class CollectorApi {
   }
 
   async online() {
+    // In-process collector is always available when embedded collector is loaded
     if (global.collectorOnline === true) return true;
-
+    if (inProcessCollector.isCollectorAvailable() &&
+        process.env.DISABLE_EMBEDDED_COLLECTOR !== "true") {
+      global.collectorOnline = true;
+      return true;
+    }
     try {
       const res = await fetch(this.endpoint);
       if (res.ok) return true;
     } catch (e) {}
-
-    try {
-      const altEndpoint = `http://localhost:${CollectorApi.getCollectorPort()}`;
-      const res = await fetch(altEndpoint);
-      if (res.ok) return true;
-    } catch (e) {}
-
     return false;
   }
 
@@ -126,38 +125,8 @@ class CollectorApi {
    */
   async processDocument(filename = "", metadata = {}) {
     if (!filename) return false;
-
-    const data = JSON.stringify({
-      filename,
-      metadata,
-      options: this.#attachOptions(),
-    });
-
-    try {
-      const res = await fetch(`${this.endpoint}/process`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Integrity": this.comkey.sign(data),
-          "X-Payload-Signer": this.comkey.encrypt(
-            new EncryptionManager().xPayload
-          ),
-        },
-        body: data,
-        dispatcher: new Agent({ headersTimeout: 600000 }),
-      });
-      if (res.ok) return await res.json();
-    } catch (e) {
-      this.log(`HTTP processDocument failed (${e.message}), executing in-process fallback.`);
-    }
-
-    try {
-      const { processSingleFile } = require("../../../collector/processSingleFile");
-      return await processSingleFile(filename, this.#attachOptions(), metadata);
-    } catch (e) {
-      this.log(`In-process processDocument failed: ${e.message}`);
-      return { success: false, reason: e.message, documents: [] };
-    }
+    // Primary: in-process direct call (no HTTP)
+    return await inProcessCollector.processDocument(filename, this.#attachOptions(), metadata);
   }
 
   /**
@@ -350,43 +319,11 @@ class CollectorApi {
    */
   async parseDocument(filename = "", parseOptions = {}) {
     if (!filename) return false;
-
-    const data = JSON.stringify({
-      filename,
-      options: {
-        ...this.#attachOptions(),
-        absolutePath: parseOptions.absolutePath || null,
-      },
+    // Primary: in-process direct call (no HTTP)
+    return await inProcessCollector.parseDocument(filename, {
+      ...this.#attachOptions(),
+      absolutePath: parseOptions.absolutePath || null,
     });
-
-    try {
-      const res = await fetch(`${this.endpoint}/parse`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Integrity": this.comkey.sign(data),
-          "X-Payload-Signer": this.comkey.encrypt(
-            new EncryptionManager().xPayload
-          ),
-        },
-        body: data,
-      });
-      if (res.ok) return await res.json();
-    } catch (e) {
-      this.log(`HTTP parseDocument failed (${e.message}), executing in-process fallback.`);
-    }
-
-    try {
-      const { processSingleFile } = require("../../../collector/processSingleFile");
-      return await processSingleFile(filename, {
-        ...this.#attachOptions(),
-        parseOnly: true,
-        absolutePath: parseOptions.absolutePath || null,
-      });
-    } catch (e) {
-      this.log(`In-process parseDocument failed: ${e.message}`);
-      return { success: false, reason: e.message, documents: [] };
-    }
   }
 }
 

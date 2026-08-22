@@ -11,18 +11,15 @@ if (!process.env.STORAGE_DIR) {
 require("./utils/logger")();
 console.info("[ContextIQ] Starting server...");
 
-// Launch embedded document collector service automatically
+// Mark embedded document collector as online for in-process direct calls
 try {
-  const fs = require("fs");
-  const path = require("path");
-  const collectorPath = path.resolve(__dirname, "../collector/index.js");
-  if (fs.existsSync(collectorPath) && process.env.DISABLE_EMBEDDED_COLLECTOR !== "true") {
-    console.info("[ContextIQ] Initializing embedded document collector service...");
-    process.env.COLLECTOR_PORT = process.env.COLLECTOR_PORT || "8888";
-    require(collectorPath);
+  const { isCollectorAvailable } = require("./utils/collectorApi/inProcessCollector");
+  if (isCollectorAvailable() && process.env.DISABLE_EMBEDDED_COLLECTOR !== "true") {
+    global.collectorOnline = true;
+    console.info("[ContextIQ] Embedded document collector: Ready (in-process mode)");
   }
 } catch (e) {
-  console.error("[ContextIQ] Could not start embedded collector:", e.message);
+  console.error("[ContextIQ] Could not initialize embedded collector:", e.message);
 }
 
 require("./utils/boot/patchSdkTimeouts")();
